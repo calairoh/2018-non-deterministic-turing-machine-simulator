@@ -23,6 +23,7 @@
 * - Array dei puntatori
 * - Struct per la transizione
 * - Struct per la lista
+* - Struct per la coda delle transizioni da svolgere
 * - Variabile per il numero massimo di step
 * - Definizione dell'enumerazione per i vari step del parsing del file
 * - Array per gli stati di accettazione
@@ -32,6 +33,13 @@ typedef struct Transition_s{
    int CurrentState, FinalState;
    char ReadenChar, CharToWrite, NextStep;
 } Transition;
+
+typedef struct ToDoQueueObject_s{
+   char *String;
+   int StepNum;
+   Transition NextTransition;
+   struct ToDoQueueObject_s *next;
+} ToDoQueueObject;
 
 typedef struct HashObject_s{
    Transition tr;
@@ -169,6 +177,9 @@ void ReadAndRun(){
 	 string[0] = '\0';
 	 strcat(string, tmp);
 	 strcat(string, BufferTemp);
+
+	 //Libero la vecchia stringa
+	 free(tmp);
       }
 
       if(strchr(BufferTemp, '\n')){
@@ -182,29 +193,66 @@ void ReadAndRun(){
 void RunMT(char* string){
    //Inizializzo tutte le variabili
    int BlockedMT = FALSE;
+   int stepNum = 0;
    int index = 0;
    int stringlen = strlen(string);
    int CurrentState = 0;
 
    while(!BlockedMT){
       //Esegui le transizioni
+
    }
+}
+
+Transition GetNextTransition(int currentState, char readenChar, char *string, int stepNum){
+   Transition tr = NULL;
+   int trCount = 0;
+   int hashValue = TransitionHashFunction(currentState, readenChar);
+   HashObject *hashObject = HashPointers[hashValue];
+
+   for(; hashObject; hashObject = hashObject -> next)
+      if(hashObject -> tr.CurrentState == currentState && hashObject -> tr.ReadenChar = readenChar)
+	 if(trCount)
+	    break; //AddToQueue
+	 else {
+	    //Il valore dello stato corrente e del carattere letto non li ritorno dato che non mi
+	    //servono
+	    tr->CharToWrite = hashObject -> tr.CharToWrite;
+	    tr->NextStep = hashObject -> tr.NextStep;
+	    tr->FinalState = hashObject -> tr.FinalState;
+	 }
+
+   return tr;
 }
 
 int TransitionHashFunction(char c1, char c2){
    return ((int)c1 + (int)c2) % HASH_TABLE_DIM;
 }
 
+ToDoQueueObject* TransitionQueueHeadInsert(ToDoQueueObject *head, Transition *transition, char* string, int stepNum){
+   ToDoQueueObject* tmp;
+   tmp = head;
+
+   if(head = (ToDoQueueObject *) malloc(sizeof(ToDoQueueObject))){
+      //Copio la nuova stringa
+      head -> String = (char *) malloc((strlen(string) + 1) * sizeof(char));
+      strcpy(head -> String, string);
+
+      
+   }
+}
+
 HashObject* TransitionHeadInsert(HashObject *head, Transition *transition){
    HashObject* tmp;
    tmp = head;
 
-   if(head = (HashObject*) malloc(sizeof(HashObject))){
+   if(head = (HashObject *) malloc(sizeof(HashObject))){
       head -> tr.CurrentState = transition -> CurrentState;
       head -> tr.ReadenChar = transition -> ReadenChar;
       head -> tr.CharToWrite = transition -> CharToWrite;
       head -> tr.NextStep = transition -> NextStep;
-      head -> tr.FinalState = transition -> FinalState;	 
+      head -> tr.FinalState = transition -> FinalState;
+      //head -> tr = transition;	 
       head -> next = tmp;
    }
 

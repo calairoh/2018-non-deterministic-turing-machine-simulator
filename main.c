@@ -73,7 +73,7 @@ HashObject* HashPointers[HASH_TABLE_DIM];
 */
 HashObject* TransitionHeadInsert(HashObject*, Transition*);
 void TransitionQueueHeadInsert(ToDoQueueObject*, Transition, char*, int, int);
-Transition GetNextTransition(int, char, char*, int, int);
+Transition GetNextTransition(int, char, char*, int, int, int);
 int TransitionHashFunction(char, char);
 void FileParsing();
 void ReadAndRun();
@@ -97,7 +97,7 @@ int main(int argc, char *argv[]){
    FileParsing();
   
    //VISUALIZZAZIONE DEI DATI IN MEMORIA
-   /*HashObject *h; 
+   HashObject *h; 
    int i;
    printf("Transizioni lette\n");
    for(i = 0; i < HASH_TABLE_DIM; i++){
@@ -110,7 +110,7 @@ int main(int argc, char *argv[]){
    for(i = 0; i < AccStatesArrayDim; i++)
       if(AccStatesArray[i] == TRUE)
       printf("%d\t", i);
-   printf("\nMax %d\n Finish\n", MaxStep);*/
+   printf("\nMax %d\n Finish\n", MaxStep);
 
    /*
    * FASE 2: Run del simulatore
@@ -234,11 +234,12 @@ void RunMT(char* string){
       stepNum = 0,
       index = 0,
       stringlen = strlen(string),
-      currentState = 0;
+      currentState = 0,
+      isFirst = TRUE;
    Transition tr;
    QueueHead = NULL;
 
-   tr = GetNextTransition(currentState, string[index], string, stepNum, index);
+   GetNextTransition(currentState, string[index], string, stepNum, index, FALSE);
    TransitionQueueHeadInsert(QueueHead, tr, string, stepNum, index); 
 
    while(QueueHead){
@@ -290,7 +291,7 @@ void RunMT(char* string){
 	    printf("Step numero %d\t Stringa: %s\t Stato corrente %d\n", stepNum, string, currentState);
 
 	    //Prendo la possima transizione dato lo stato corrente e il carattere letto
-	    tr = GetNextTransition(currentState, string[index], string, stepNum, index);
+	    tr = GetNextTransition(currentState, string[index], string, stepNum, index, FALSE);
 	 }
       }
 
@@ -312,7 +313,7 @@ void RunMT(char* string){
 	 printf("0\n");
 }
 
-Transition GetNextTransition(int currentState, char readenChar, char *string, int stepNum, int index){
+Transition GetNextTransition(int currentState, char readenChar, char *string, int stepNum, int index, int isFirst){
    char possibleReadenChar[] = { readenChar, BLANK };
    Transition tr;
    int trCount = 0, i, hashValue;
@@ -332,9 +333,9 @@ Transition GetNextTransition(int currentState, char readenChar, char *string, in
 	    tr.NextStep = hashObject -> tr.NextStep;
 	    tr.FinalState = hashObject -> tr.FinalState;
 
-	    if(trCount){
+	    if(trCount || isFirst){
 	       TransitionQueueHeadInsert(QueueHead, tr, string, stepNum, index);
-	       //printf("Aggiunta una transizione alla coda\n");
+	       printf("Aggiunta una transizione alla coda\n");
 	    }
 
 	    trCount++;

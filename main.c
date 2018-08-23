@@ -9,10 +9,12 @@
 */
 #define TRUE 1
 #define FALSE 0
+#define BLANK '_'
 #define HASH_TABLE_DIM 30
 #define TRANSITION_STRING_DIM 10 
 #define FIRST_ASCII_LETTER_INT 97 // ASCII 97 = 'a'
-#define BUFFER_DIM 100 
+#define BUFFER_DIM 100
+#define EXPAND_STRING_DIM 20
 
 ////////////////////////////////////////////////////////
 
@@ -60,6 +62,7 @@ int AccStatesArrayDim;
 int MaxStatus;
 int MaxStep;
 char BufferTemp[BUFFER_DIM + 1];
+ToDoQueueObject *QueueHead;
 
 HashObject* HashPointers[HASH_TABLE_DIM];
 /////////////////////////////////////////////////////////
@@ -68,10 +71,14 @@ HashObject* HashPointers[HASH_TABLE_DIM];
 * DICHIARAZIONE DEI METODI
 */
 HashObject* TransitionHeadInsert(HashObject*, Transition*);
+ToDoQueueObject* TransitionQueueHeadInsert(ToDoQueueObject*, Transition, char*, int);
+Transition GetNextTransition(int, char, char*, int);
 int TransitionHashFunction(char, char);
 void FileParsing();
 void ReadAndRun();
+char* ExpandString(char*, char side);
 void RunMT(char*);
+void FreeSingleStringMemory(char*);
 void InitHashTable(HashObject**);
 
 /////////////////////////////////////////////////////////
@@ -90,7 +97,6 @@ int main(int argc, char *argv[]){
   
    //VISUALIZZAZIONE DEI DATI IN MEMORIA 
    /*int i;
-   HashObject *h;
    printf("Transizioni lette\n");
    for(i = 0; i < HASH_TABLE_DIM; i++){
       if(HashPointers[i] != NULL)
@@ -184,43 +190,127 @@ void ReadAndRun(){
 
       if(strchr(BufferTemp, '\n')){
 	 RunMT(string);
-	 free(string);
 	 string = (char *) malloc(sizeof(char)); 
       }
    }
 }
 
+char* ExpandString(char *string, char side){
+   char *expandedString;
+   char expandeString[EXPAND_STRING_DIM];
+   int i;
+
+   for(i = 0; i < EXPAND_STRING_DIM; i++)
+      expandeString[i] = BLANK;
+   
+
+   if(expandedString = (char *) malloc((strlen(string) + EXPAND_STRING_DIM + 1) * sizeof(char)))
+   {
+      if(side == 'R'){
+	 strcat(expandedString, string);
+	 strcat(expandedString, expandeString);
+      } else{
+	 strcat(expandedString, expandeString);
+	 strcat(expandedString, string);
+      }
+   }
+
+   free(string);
+
+   return expandedString;
+}
+
 void RunMT(char* string){
    //Inizializzo tutte le variabili
-   int BlockedMT = FALSE;
-   int stepNum = 0;
-   int index = 0;
-   int stringlen = strlen(string);
-   int CurrentState = 0;
+   int BlockedMT = FALSE,
+      stepNum = 0,
+      index = 0,
+      stringlen = strlen(string),
+      currentState = 0;
+   Transition tr;
+   QueueHead = NULL;
 
-   while(!BlockedMT){
-      //Esegui le transizioni
+   tr = GetNextTransition(currentState, string[index], string, stepNum);
+   QueueHead = TransitionQueueHeadInsert(QueueHead, tr, string, stepNum); 
 
+   while(QueueHead){
+      //Parto con la prima transizione della sequenza deterministica
+      tr = QueueHead -> NextTransition;
+      stepNum = QueueHead -> StepNum;
+      string = QueueHead -> String;
+
+      //Libero la memoria della transizione in coda e imposto la cosa sulla prossima
+      ToDoQueueObject *tmp = QueueHead;
+      QueueHead = QueueHead -> next;
+      free(tmp);
+
+      //Imposto la MT come non bloccata
+      BlockedMT = FALSE;
+
+      while(!BlockedMT && stepNum <= MaxStep){     
+	 //Eseguo le istruzione della transizione
+	 if(tr == NULL)
+	    BlockedMT = TRUE;
+	 else {
+	    string[index] = tr.CharToWrite;
+	    currentState = tr.FinalState;
+	 
+	    if(tr.NextStep == 'R')
+	       index++;
+	    else if(tr.NextStep == 'L')
+	       index--;
+	 
+	    if(index < 0){
+	       string = ExpandString(string, 'L');
+	       index = EXPAND_STRING_DIM - 2;
+	       stringlen = strlen(string);
+	    }
+	    else if(index == stringlen)
+	    {
+	       string = ExpandString(string, 'R');
+	       stringlen = strlen(string);
+	    }
+	 
+
+	    //Incremento il numero di step fatti
+	    stepNum++;
+	 
+	    //Prendo la possima transizione dato lo stato corrente e il carattere letto
+	    tr = GetNextTransition(currentState, string[index], string, stepNum);
+	 }
+      }
+
+      //Una volta che la macchina si è bloccata controllo se lo stato in cui è arrivato è uno stato di
+      //accettazione
+      if(AccStatesArray[currentState]){
+	 //In caso affermativo stampo 1 e avvio la procedura per la pulizia della memoria
+	 printf("1\n");
+	 FreeSingleStringMemory(string);
+      }
    }
 }
 
 Transition GetNextTransition(int currentState, char readenChar, char *string, int stepNum){
-   Transition tr = NULL;
-   int trCount = 0;
-   int hashValue = TransitionHashFunction(currentState, readenChar);
-   HashObject *hashObject = HashPointers[hashValue];
+   char possibleReadenChar[] = { readenChar, BLANK };
+   Transition tr;
+   int trCount = 0, i, hashValue;
+   HashObject *hashObject;
 
-   for(; hashObject; hashObject = hashObject -> next)
-      if(hashObject -> tr.CurrentState == currentState && hashObject -> tr.ReadenChar = readenChar)
-	 if(trCount)
-	    break; //AddToQueue
-	 else {
+   for(i = 0; i < 2; i++){
+      hashValue = TransitionHashFunction(currentState, possibleReadenChar[i]);
+      hashObject = HashPointers[hashValue];
+      for(; hashObject; hashObject = hashObject -> next)
+	 if(hashObject -> tr.CurrentState == currentState && hashObject -> tr.ReadenChar == possibleReadenChar[i]){
 	    //Il valore dello stato corrente e del carattere letto non li ritorno dato che non mi
 	    //servono
-	    tr->CharToWrite = hashObject -> tr.CharToWrite;
-	    tr->NextStep = hashObject -> tr.NextStep;
-	    tr->FinalState = hashObject -> tr.FinalState;
+	    tr.CharToWrite = hashObject -> tr.CharToWrite;
+	    tr.NextStep = hashObject -> tr.NextStep;
+	    tr.FinalState = hashObject -> tr.FinalState;
+
+	    if(trCount)
+	       TransitionQueueHeadInsert(QueueHead, tr, string, stepNum); 
 	 }
+   }
 
    return tr;
 }
@@ -229,7 +319,7 @@ int TransitionHashFunction(char c1, char c2){
    return ((int)c1 + (int)c2) % HASH_TABLE_DIM;
 }
 
-ToDoQueueObject* TransitionQueueHeadInsert(ToDoQueueObject *head, Transition *transition, char* string, int stepNum){
+ToDoQueueObject* TransitionQueueHeadInsert(ToDoQueueObject *head, Transition transition, char* string, int stepNum){
    ToDoQueueObject* tmp;
    tmp = head;
 
@@ -237,9 +327,12 @@ ToDoQueueObject* TransitionQueueHeadInsert(ToDoQueueObject *head, Transition *tr
       //Copio la nuova stringa
       head -> String = (char *) malloc((strlen(string) + 1) * sizeof(char));
       strcpy(head -> String, string);
-
-      
+      head -> StepNum = stepNum;
+      head -> NextTransition = transition;
+      head -> next = tmp;      
    }
+
+   return head;
 }
 
 HashObject* TransitionHeadInsert(HashObject *head, Transition *transition){
@@ -257,6 +350,20 @@ HashObject* TransitionHeadInsert(HashObject *head, Transition *transition){
    }
 
    return head;
+}
+
+/*
+* Funzione che libera la memoria dopo che l'analisi di una stringa è stata completata
+*/
+void FreeSingleStringMemory(char *string){
+   //Svuoto la TO DO list delle transizioni
+   for(; QueueHead; QueueHead = QueueHead -> next){
+      ToDoQueueObject *tmp = QueueHead;
+      free(tmp);
+   }
+
+   //Libero la stringa sulla quale ho fatto le operazioni
+   free(string);
 }
 
 void InitHashTable(HashObject **table){

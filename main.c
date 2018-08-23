@@ -287,7 +287,7 @@ void RunMT(char* string){
 
 	    //Incremento il numero di step fatti
 	    stepNum++;
-	    //printf("Step numero %d\t Stringa: %s\n", stepNum, string);
+	    printf("Step numero %d\t Stringa: %s\t Stato corrente %d\n", stepNum, string, currentState);
 
 	    //Prendo la possima transizione dato lo stato corrente e il carattere letto
 	    tr = GetNextTransition(currentState, string[index], string, stepNum, index);

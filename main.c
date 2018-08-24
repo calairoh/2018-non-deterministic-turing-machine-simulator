@@ -261,7 +261,7 @@ void RunMT(char* string){
       BlockedMT = FALSE;
 
       while(!BlockedMT && stepNum <= MaxStep){
-	 //printf("Trovata la transizione da eseguire: %c %c %d\n", tr.CharToWrite, tr.NextStep, tr.FinalState);     
+	printf("Trovata la transizione da eseguire: %c %c %d\n", tr.CharToWrite, tr.NextStep, tr.FinalState);     
 	 //Eseguo le istruzione della transizione
 	 if(tr.FinalState == -1){
 	    BlockedMT = TRUE;
@@ -278,7 +278,7 @@ void RunMT(char* string){
 	    
 	    if(index < 0){
 	       string = ExpandString(string, 'L');
-	       index = EXPAND_STRING_DIM - 2;
+	       index = EXPAND_STRING_DIM - 1;
 	       stringlen = strlen(string);
 	    }
 	    else if(index == stringlen)
@@ -289,7 +289,9 @@ void RunMT(char* string){
 
 	    //Incremento il numero di step fatti
 	    stepNum++;
-	    //printf("Index: %d Step numero %d\t Stringa: %s\t Stato corrente %d\n", index, stepNum, string, currentState);
+if(stepNum == 15)
+printf("OK");
+	    printf("Index: %d Step numero %d\t Stringa: %s\t Stato corrente %d\n", index, stepNum, string, currentState);
 
 	    //Prendo la possima transizione dato lo stato corrente e il carattere letto
 	    tr = GetNextTransition(currentState, string[index], string, stepNum, index);
@@ -305,9 +307,7 @@ void RunMT(char* string){
 	//printf("currentState: %d\n", currentState);
 	 FreeSingleStringMemory(string);
 	 AcceptedString = TRUE;
-      } else {
-//printf("BLOCCATA MA NON NELLO STATO FINALE DI ACCETTAZIONE\n\n");
-}
+      }
    }
 
    if(!AcceptedString)

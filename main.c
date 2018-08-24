@@ -14,7 +14,7 @@
 #define TRANSITION_STRING_DIM 10 
 #define FIRST_ASCII_LETTER_INT 97 // ASCII 97 = 'a'
 #define BUFFER_DIM 100
-#define EXPAND_STRING_DIM 20
+#define EXPAND_STRING_DIM 10
 
 ////////////////////////////////////////////////////////
 
@@ -73,7 +73,7 @@ HashObject* HashPointers[HASH_TABLE_DIM];
 */
 HashObject* TransitionHeadInsert(HashObject*, Transition*);
 void TransitionQueueHeadInsert(ToDoQueueObject*, Transition, char*, int, int);
-Transition GetNextTransition(int, char, char*, int, int, int);
+Transition GetNextTransition(int, char, char*, int, int);
 int TransitionHashFunction(char, char);
 void FileParsing();
 void ReadAndRun();
@@ -97,7 +97,7 @@ int main(int argc, char *argv[]){
    FileParsing();
   
    //VISUALIZZAZIONE DEI DATI IN MEMORIA
-   HashObject *h; 
+   /*HashObject *h; 
    int i;
    printf("Transizioni lette\n");
    for(i = 0; i < HASH_TABLE_DIM; i++){
@@ -110,7 +110,7 @@ int main(int argc, char *argv[]){
    for(i = 0; i < AccStatesArrayDim; i++)
       if(AccStatesArray[i] == TRUE)
       printf("%d\t", i);
-   printf("\nMax %d\n Finish\n", MaxStep);
+   printf("\nMax %d\n Finish\n", MaxStep);*/
 
    /*
    * FASE 2: Run del simulatore
@@ -205,11 +205,12 @@ char* ExpandString(char *string, char side){
    int i;
 
    for(i = 0; i < EXPAND_STRING_DIM; i++)
-      expandeString[i] = BLANK;
-   
+      expandeString[i] = BLANK;   
 
    if(expandedString = (char *) malloc((strlen(string) + EXPAND_STRING_DIM + 1) * sizeof(char)))
    {
+      strcpy(expandedString, "\0");
+
       if(side == 'R'){
 	 strcat(expandedString, string);
 	 strcat(expandedString, expandeString);
@@ -226,7 +227,7 @@ char* ExpandString(char *string, char side){
 
 void RunMT(char* string){
    //printf("Incomincio la simulazione per la stringa %s\n", string);
-   
+
    //Inizializzo tutte le variabili
    int BlockedMT = FALSE,
       AcceptedString = FALSE,
@@ -239,11 +240,11 @@ void RunMT(char* string){
    Transition tr;
    QueueHead = NULL;
 
-   GetNextTransition(currentState, string[index], string, stepNum, index, FALSE);
+   tr = GetNextTransition(currentState, string[index], string, stepNum, index);
    TransitionQueueHeadInsert(QueueHead, tr, string, stepNum, index); 
 
    while(QueueHead){
-      printf("Partenza nuovo percorso %s\n", string);
+      //printf("\nPartenza nuovo percorso %s\n", string);
 
       //Parto con la prima transizione della sequenza deterministica
       tr = QueueHead -> NextTransition;
@@ -260,7 +261,7 @@ void RunMT(char* string){
       BlockedMT = FALSE;
 
       while(!BlockedMT && stepNum <= MaxStep){
-	 printf("Trovata la transizione da eseguire: %c %c %d\n", tr.CharToWrite, tr.NextStep, tr.FinalState);     
+	 //printf("Trovata la transizione da eseguire: %c %c %d\n", tr.CharToWrite, tr.NextStep, tr.FinalState);     
 	 //Eseguo le istruzione della transizione
 	 if(tr.FinalState == -1){
 	    BlockedMT = TRUE;
@@ -288,10 +289,10 @@ void RunMT(char* string){
 
 	    //Incremento il numero di step fatti
 	    stepNum++;
-	    printf("Step numero %d\t Stringa: %s\t Stato corrente %d\n", stepNum, string, currentState);
+	    //printf("Index: %d Step numero %d\t Stringa: %s\t Stato corrente %d\n", index, stepNum, string, currentState);
 
 	    //Prendo la possima transizione dato lo stato corrente e il carattere letto
-	    tr = GetNextTransition(currentState, string[index], string, stepNum, index, FALSE);
+	    tr = GetNextTransition(currentState, string[index], string, stepNum, index);
 	 }
       }
 
@@ -301,9 +302,12 @@ void RunMT(char* string){
       else if(stepNum <= MaxStep && AccStatesArray[currentState]){
 	 //In caso affermativo stampo 1 e avvio la procedura per la pulizia della memoria
 	 printf("1\n");
+	//printf("currentState: %d\n", currentState);
 	 FreeSingleStringMemory(string);
 	 AcceptedString = TRUE;
-      }
+      } else {
+//printf("BLOCCATA MA NON NELLO STATO FINALE DI ACCETTAZIONE\n\n");
+}
    }
 
    if(!AcceptedString)
@@ -313,7 +317,7 @@ void RunMT(char* string){
 	 printf("0\n");
 }
 
-Transition GetNextTransition(int currentState, char readenChar, char *string, int stepNum, int index, int isFirst){
+Transition GetNextTransition(int currentState, char readenChar, char *string, int stepNum, int index){
    char possibleReadenChar[] = { readenChar, BLANK };
    Transition tr;
    int trCount = 0, i, hashValue;
@@ -323,19 +327,24 @@ Transition GetNextTransition(int currentState, char readenChar, char *string, in
    tr.FinalState = -1;
 
    for(i = 0; i < 2; i++){
-      printf("Cerco la transizione per lo stato %d e il char %c\n", currentState, possibleReadenChar[i]);
+      //printf("Cerco la transizione per lo stato %d e il char %c\n", currentState, possibleReadenChar[i]);
       hashValue = TransitionHashFunction(currentState, possibleReadenChar[i]);
       hashObject = HashPointers[hashValue];
       for(; hashObject; hashObject = hashObject -> next)
 	 if(hashObject -> tr.CurrentState == currentState && hashObject -> tr.ReadenChar == possibleReadenChar[i]){
-	    //Il valore dello stato corrente e del carattere letto non li ritorno dato che non mi servono
-	    tr.CharToWrite = hashObject -> tr.CharToWrite;
-	    tr.NextStep = hashObject -> tr.NextStep;
-	    tr.FinalState = hashObject -> tr.FinalState;
-
-	    if(trCount || isFirst){
-	       TransitionQueueHeadInsert(QueueHead, tr, string, stepNum, index);
-	       printf("Aggiunta una transizione alla coda\n");
+	    
+	    if(trCount){
+	       Transition tmp;
+	       tmp.CharToWrite = hashObject -> tr.CharToWrite;
+	       tmp.NextStep = hashObject -> tr.NextStep;
+	       tmp.FinalState = hashObject -> tr.FinalState;
+	       TransitionQueueHeadInsert(QueueHead, tmp, string, stepNum, index);
+	       
+//printf("Aggiunta una transizione alla coda\n");
+	    } else {	       
+	       tr.CharToWrite = hashObject -> tr.CharToWrite;
+	       tr.NextStep = hashObject -> tr.NextStep;
+	       tr.FinalState = hashObject -> tr.FinalState;
 	    }
 
 	    trCount++;

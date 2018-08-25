@@ -238,7 +238,7 @@ char* ExpandString(char *string, char side){
 }
 
 void RunMT(char* string){
-   //printf("Incomincio la simulazione per la stringa %s\n", string);
+   printf("Incomincio la simulazione per la stringa %s\n", string);
 
    //Inizializzo tutte le variabili
    int BlockedMT = FALSE,

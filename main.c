@@ -313,8 +313,7 @@ void RunMT(char* string){
 	 MaxStepOvered = TRUE;
       else if(stepNum <= MaxStep && AccStatesArray[currentState]){
 	 //In caso affermativo stampo 1 e avvio la procedura per la pulizia della memoria
-	 printf("1\n");
-	 fflush(stdout);
+	 fprintf(stdout, "1\n");
 	//printf("currentState: %d\n", currentState);
 	 FreeSingleStringMemory(string);
 	 AcceptedString = TRUE;
@@ -323,10 +322,9 @@ void RunMT(char* string){
 
    if(!AcceptedString){
       if(MaxStepOvered)
-	 printf("U\n");
+	 fprintf(stdout, "U\n");
       else
-	 printf("0\n");
-      fflush(stdout);
+	 fprintf(stdout, "0\n");
    }
 }
 

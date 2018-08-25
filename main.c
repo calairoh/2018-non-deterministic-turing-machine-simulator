@@ -190,7 +190,7 @@ void ReadAndRun(){
    fgetc(stdin);
    while(fgets(BufferTemp, BUFFER_DIM, stdin)){
       char *tmp = string;
-      printf("Letto %s\n", BufferTemp);
+      //printf("Letto %s\n", BufferTemp);
       if(string = (char *) malloc((strlen(BufferTemp) + strlen(string) + 1) * sizeof(char))){
 	 string[0] = '\0';
 	 strcat(string, tmp);
@@ -198,16 +198,20 @@ void ReadAndRun(){
 
 	 //Libero la vecchia stringa
 	 free(tmp);
-      }
-
+      }  
+      
       if(ret = strchr(string, '\n')){
-	 ret[0] = '\0';
-	 printf("Parte il Running\n Stringa %s\n", string);
+	 ret[0] = '\0';	 
 	 RunMT(string);
 	 free(string);
 	 string = (char *) malloc(sizeof(char));
 	 string[0] = '\0'; 
       }
+   }
+
+   if(string[0] != '\0'){
+      RunMT(string);
+      free(string);
    }
 }
 
@@ -239,7 +243,7 @@ char* ExpandString(char *string, char side){
 }
 
 void RunMT(char* string){
-   printf("Incomincio la simulazione per la stringa %s\n", string);
+   //printf("Incomincio la simulazione per la stringa %s\n", string);
 
    //Inizializzo tutte le variabili
    int BlockedMT = FALSE,

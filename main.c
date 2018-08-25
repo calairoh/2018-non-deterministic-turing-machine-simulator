@@ -202,6 +202,7 @@ void ReadAndRun(){
 
       if(ret = strchr(string, '\n')){
 	 ret[0] = '\0';
+	 printf("Parte il Running\n Stringa %s\n", string);
 	 RunMT(string);
 	 free(string);
 	 string = (char *) malloc(sizeof(char));

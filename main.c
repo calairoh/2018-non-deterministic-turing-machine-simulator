@@ -314,17 +314,20 @@ void RunMT(char* string){
       else if(stepNum <= MaxStep && AccStatesArray[currentState]){
 	 //In caso affermativo stampo 1 e avvio la procedura per la pulizia della memoria
 	 printf("1\n");
+	 fflush(stdout);
 	//printf("currentState: %d\n", currentState);
 	 FreeSingleStringMemory(string);
 	 AcceptedString = TRUE;
       }
    }
 
-   if(!AcceptedString)
+   if(!AcceptedString){
       if(MaxStepOvered)
 	 printf("U\n");
       else
 	 printf("0\n");
+      fflush(stdout);
+   }
 }
 
 Transition GetNextTransition(int currentState, char readenChar, char *string, int stepNum, int index){

@@ -122,6 +122,9 @@ int main(int argc, char *argv[]){
    * FASE 3: Pulizia di tutta la memoria
    */
    MemoryClean();
+   
+   //Faccio un ultimo fflush per svuotare il buffer
+   fflush(stdout);
 
    return 0;
 }

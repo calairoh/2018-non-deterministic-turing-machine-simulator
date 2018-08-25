@@ -59,4 +59,5 @@ acc
 max
 4000
 run
-aaabbc
+aabbbbcc
+aabcc

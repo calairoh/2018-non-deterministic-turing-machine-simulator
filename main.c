@@ -190,7 +190,7 @@ void ReadAndRun(){
    fgetc(stdin);
    while(fgets(BufferTemp, BUFFER_DIM, stdin)){
       char *tmp = string;
-
+      printf("Letto %s\n", BufferTemp);
       if(string = (char *) malloc((strlen(BufferTemp) + strlen(string) + 1) * sizeof(char))){
 	 string[0] = '\0';
 	 strcat(string, tmp);

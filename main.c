@@ -137,7 +137,7 @@ void FileParsing(){
    int accState, numCharRead;
    char label[4];
 
-   scanf("%s", label);
+   numCharRead = scanf("%s", label);
    while((int)FileSectionIndex < (int)RUN){
       switch(FileSectionIndex){
          case TRANSITION: {
@@ -160,12 +160,12 @@ void FileParsing(){
 	 }
 	 case MAX: {
 	    // Uso la variabile finalState solo per non dichiararne di nuove
-	    scanf("%d", &MaxStep);
+	    numCharRead = scanf("%d", &MaxStep);
 	    break;
 	 }
       }
       
-      scanf("%s", label);
+      numCharRead = scanf("%s", label);
        
       //Incremento il FileSectionIndex dato che sono passato alla sezione del file successiva
       (int)FileSectionIndex++;
@@ -425,9 +425,6 @@ void MemoryClean(){
 	 free(tmp);
       }
    }
-
-   //Libero l'array degli stati di accettazione
-   free(AccStatesArray);
 }
 
 void InitHashTable(HashObject **table){

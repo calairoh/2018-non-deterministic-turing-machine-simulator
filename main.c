@@ -11,10 +11,10 @@
 #define FALSE 0
 #define BLANK '_'
 #define HASH_TABLE_DIM 30
-#define TRANSITION_STRING_DIM 10 
+#define TRANSITION_STRING_DIM 10
 #define FIRST_ASCII_LETTER_INT 97 // ASCII 97 = 'a'
 #define BUFFER_DIM 100
-#define EXPAND_STRING_DIM 10
+#define EXPAND_STRING_DIM 5
 
 ////////////////////////////////////////////////////////
 
@@ -38,9 +38,8 @@ typedef struct Transition_s{
 
 typedef struct ToDoQueueObject_s{
    char *String;
-   int StepNum;
-   int Index;
-   Transition NextTransition;
+   int StepNum, Index, FinalState;
+   char CharToWrite, NextStep;
    struct ToDoQueueObject_s *next;
 } ToDoQueueObject;
 
@@ -59,7 +58,7 @@ typedef enum {
 
 int *AccStatesArray;
 int AccStatesArrayDim;
-// MaxStatus indica il numero del più grande stato 
+// MaxStatus indica il numero del più grande stato
 int MaxStatus;
 int MaxStep;
 char BufferTemp[BUFFER_DIM + 1];
@@ -72,8 +71,8 @@ HashObject* HashPointers[HASH_TABLE_DIM];
 * DICHIARAZIONE DEI METODI
 */
 HashObject* TransitionHeadInsert(HashObject*, Transition*);
-void TransitionQueueHeadInsert(ToDoQueueObject*, Transition, char*, int, int);
-Transition GetNextTransition(int, char, char*, int, int);
+void TransitionQueueHeadInsert(char, char, int, char*, int, int);
+//Transition GetNextTransition(int, char, char*, int, int);
 int TransitionHashFunction(char, char);
 void FileParsing();
 void ReadAndRun();
@@ -96,9 +95,9 @@ int main(int argc, char *argv[]){
    * FASE 1: Parsing del file e inserimento dei valori
    */
    FileParsing();
-  
+
    //VISUALIZZAZIONE DEI DATI IN MEMORIA
-   /*HashObject *h; 
+   /*HashObject *h;
    int i;
    printf("Transizioni lette\n");
    for(i = 0; i < HASH_TABLE_DIM; i++){
@@ -122,7 +121,7 @@ int main(int argc, char *argv[]){
    * FASE 3: Pulizia di tutta la memoria
    */
    MemoryClean();
-   
+
    //Faccio un ultimo fflush per svuotare il buffer
    //fflush(stdout);
 
@@ -167,9 +166,9 @@ void FileParsing(){
 	    break;
 	 }
       }
-      
+
       numCharRead = scanf("%s", label);
-       
+
       //Incremento il FileSectionIndex dato che sono passato alla sezione del file successiva
       (int)FileSectionIndex++;
 
@@ -198,14 +197,14 @@ void ReadAndRun(){
 
 	 //Libero la vecchia stringa
 	 free(tmp);
-      }  
-      
+      }
+
       if(ret = strchr(string, '\n')){
-	 ret[0] = '\0';	 
+	 ret[0] = '\0';
 	 RunMT(string);
 	 free(string);
 	 string = (char *) malloc(sizeof(char));
-	 string[0] = '\0'; 
+	 string[0] = '\0';
       }
    }
 
@@ -215,29 +214,31 @@ void ReadAndRun(){
    }
 }
 
-char* ExpandString(char *string, char side){
+char* ExpandString(char *string, char side, int *stringlen){
    char *expandedString;
-   char expandeString[EXPAND_STRING_DIM + 1];
+   char expandeString[EXPAND_STRING_DIM + 1] = { BLANK, BLANK, BLANK, BLANK, BLANK, '\0'};
    int i;
 
-   for(i = 0; i < EXPAND_STRING_DIM; i++)
+   /*for(i = 0; i < EXPAND_STRING_DIM; i++)
       expandeString[i] = BLANK;
-   expandeString[i] = '\0';
+   expandeString[i] = '\0';*/
 
-   if(expandedString = (char *) malloc((strlen(string) + EXPAND_STRING_DIM + 1) * sizeof(char)))
+   if(expandedString = (char *) malloc(*stringlen + EXPAND_STRING_DIM + 1) * sizeof(char)))
    {
       strcpy(expandedString, "\0");
 
       if(side == 'R'){
-	 strcpy(expandedString, string);
-	 strcat(expandedString, expandeString);
+    	 strcpy(expandedString, string);
+    	 strcat(expandedString, expandeString);
       } else{
-	 strcpy(expandedString, expandeString);
-	 strcat(expandedString, string);
+    	 strcpy(expandedString, expandeString);
+    	 strcat(expandedString, string);
       }
    }
 
    free(string);
+
+   *stringlen = *stringlen + EXPAND_STRING_DIM + 1;
 
    return expandedString;
 }
@@ -249,25 +250,30 @@ void RunMT(char* string){
    int BlockedMT = FALSE,
       AcceptedString = FALSE,
       MaxStepOvered = FALSE,
-      stepNum = 0,
-      index = 0,
+      stepNum,
+      index,
       stringlen = strlen(string),
-      currentState = 0,
-      isFirst = TRUE;
+      currentState,
+      isFirst = TRUE,
+      trCount = 1;
    Transition tr;
    QueueHead = NULL;
 
-   tr = GetNextTransition(currentState, string[index], string, stepNum, index);
-   TransitionQueueHeadInsert(QueueHead, tr, string, stepNum, index); 
+   TransitionQueueHeadInsert(string[0], 'S', 0, string, 0, 0);
 
    while(QueueHead){
 
       //Parto con la prima transizione della sequenza deterministica
-      tr = QueueHead -> NextTransition;
+      currentState = QueueHead -> FinalState;
       stepNum = QueueHead -> StepNum;
       string = QueueHead -> String;
       index = QueueHead -> Index;
-      stringlen = strlen(string);
+      string[index] = QueueHead -> CharToWrite;
+
+      if(QueueHead -> NextStep == 'R')
+        index++;
+      else if(QueueHead -> NextStep == 'L')
+        index--;
 
       //printf("\nPartenza nuovo percorso %s\n", string);
 
@@ -279,52 +285,57 @@ void RunMT(char* string){
       //Imposto la MT come non bloccata
       BlockedMT = FALSE;
 
-      while(!BlockedMT && stepNum <= MaxStep){
-	//printf("Trovata la transizione da eseguire: %c %c %d\n", tr.CharToWrite, tr.NextStep, tr.FinalState);     
-	 //Eseguo le istruzione della transizione
-	 if(tr.FinalState == -1){
-	    BlockedMT = TRUE;
-	    //printf("BLOCCATO\n");
-	 }
-	 else {
-	    string[index] = tr.CharToWrite;
-	    currentState = tr.FinalState;
-	    
-	    if(tr.NextStep == 'R')
-	       index++;
-	    else if(tr.NextStep == 'L')
-	       index--;
-	    
-	    if(index < 0){
-	       string = ExpandString(string, 'L');
-	       index = EXPAND_STRING_DIM - 1;
-	       stringlen = strlen(string);
-	    }
-	    else if(index == stringlen)
-	    {
-	       string = ExpandString(string, 'R');
-	       stringlen = strlen(string);
-	    }	 
+      while(trCount && stepNum <= MaxStep){
 
-	    //Incremento il numero di step fatti
-	    stepNum++;
+        if(index < 0){
+           string = ExpandString(string, 'L', stringlen);
+           index = EXPAND_STRING_DIM - 1;
+           //stringlen = strlen(string);
+        }
+        else if(index == stringlen)
+        {
+           string = ExpandString(string, 'R', stringlen);
+           //stringlen = strlen(string);
+        }
 
-	    //printf("Index: %d Step numero %d\t Stringa: %s\t Stato corrente %d\n", index, stepNum, string, currentState);
+      	//printf("Trovata la transizione da eseguire: %c %c %d\n", tr.CharToWrite, tr.NextStep, tr.FinalState);
+      	 //Eseguo le istruzione della transizione
 
-	    //Prendo la possima transizione dato lo stato corrente e il carattere letto
-	    tr = GetNextTransition(currentState, string[index], string, stepNum, index);
-	 }
+        trCount = 0;
+        hashValue = TransitionHashFunction(currentState, readenChar);
+        hashObject = HashPointers[hashValue];
+        for(; hashObject; hashObject = hashObject -> next)
+          if(hashObject -> tr.CurrentState == currentState && hashObject -> tr.ReadenChar == readenChar){
+          	 if(trCount){
+               TransitionQueueHeadInsert(hashObject -> tr.CharToWrite, hashObject -> tr.NextStep, hashObject -> tr.FinalState, tmp, string, stepNum, index);
+             } else {
+              string[index] = hashObject -> tr.CharToWrite;
+              currentState = hashObject -> tr.FinalState;
+
+              if(hashObject -> tr.NextStep == 'R')
+                index++;
+              else if(HashObject -> tr.NextStep == 'L')
+                index--;
+              }
+
+              trCount = 1;
+            }
+
+      	    //Incremento il numero di step fatti
+      	    stepNum++;
+
+      	    //printf("Index: %d Step numero %d\t Stringa: %s\t Stato corrente %d\n", index, stepNum, string, currentState);
       }
 
       //Una volta che la macchina si è bloccata controllo se lo stato in cui è arrivato è uno stato di accettazione
       if(stepNum > MaxStep)
-	 MaxStepOvered = TRUE;
+	       MaxStepOvered = TRUE;
       else if(stepNum <= MaxStep && AccStatesArray[currentState]){
-	 //In caso affermativo stampo 1 e avvio la procedura per la pulizia della memoria
-	 printf("1\n");
-	//printf("currentState: %d\n", currentState);
-	 FreeSingleStringMemory(string);
-	 AcceptedString = TRUE;
+      	 //In caso affermativo stampo 1 e avvio la procedura per la pulizia della memoria
+      	 printf("1\n");
+      	//printf("currentState: %d\n", currentState);
+      	 FreeSingleStringMemory(string);
+      	 AcceptedString = TRUE;
       }
    }
 
@@ -337,7 +348,7 @@ void RunMT(char* string){
    }
 }
 
-Transition GetNextTransition(int currentState, char readenChar, char *string, int stepNum, int index){
+/*Transition GetNextTransition(int currentState, char readenChar, char *string, int stepNum, int index){
    Transition tr;
    int trCount = 0, i, hashValue;
    HashObject *hashObject;
@@ -350,14 +361,14 @@ Transition GetNextTransition(int currentState, char readenChar, char *string, in
    hashObject = HashPointers[hashValue];
    for(; hashObject; hashObject = hashObject -> next)
       if(hashObject -> tr.CurrentState == currentState && hashObject -> tr.ReadenChar == readenChar){
-	    
+
 	 if(trCount){
 	    Transition tmp;
 	    tmp.CharToWrite = hashObject -> tr.CharToWrite;
 	    tmp.NextStep = hashObject -> tr.NextStep;
 	    tmp.FinalState = hashObject -> tr.FinalState;
 	    TransitionQueueHeadInsert(QueueHead, tmp, string, stepNum, index);
-	 } else {	       
+	 } else {
 	    tr.CharToWrite = hashObject -> tr.CharToWrite;
 	    tr.NextStep = hashObject -> tr.NextStep;
 	    tr.FinalState = hashObject -> tr.FinalState;
@@ -367,27 +378,27 @@ Transition GetNextTransition(int currentState, char readenChar, char *string, in
       }
 
    return tr;
-}
+}*/
 
 int TransitionHashFunction(char c1, char c2){
    return ((int)c1 + (int)c2) % HASH_TABLE_DIM;
 }
 
-void TransitionQueueHeadInsert(ToDoQueueObject *head, Transition transition, char* string, int stepNum, int index){
+void TransitionQueueHeadInsert(char charToWrite, char nextStep, int finalState, char* string, int stepNum, int index){
    ToDoQueueObject* tmp;
-   tmp = head;
+   tmp = QueueHead;
 
-   if(head = (ToDoQueueObject *) malloc(sizeof(ToDoQueueObject))){
+   if(QueueHead = (ToDoQueueObject *) malloc(sizeof(ToDoQueueObject))){
       //Copio la nuova stringa
-      head -> String = (char *) malloc((strlen(string) + 1) * sizeof(char));
-      strcpy(head -> String, string);
-      head -> StepNum = stepNum;
-      head -> NextTransition = transition;
-      head -> Index = index;
-      head -> next = tmp;      
+      QueueHead -> String = (char *) malloc((strlen(string) + 1) * sizeof(char));
+      strcpy(QueueHead -> String, string);
+      QueueHead -> StepNum = stepNum;
+      QueueHead -> CharToWrite = charToWrite;
+      QueueHead -> NextStep = nextStep;
+      QueueHead -> FinalState = finalState;
+      QueueHead -> Index = index;
+      QueueHead -> next = tmp;
    }
-
-   QueueHead = head;
 }
 
 HashObject* TransitionHeadInsert(HashObject *head, Transition *transition){
@@ -400,7 +411,7 @@ HashObject* TransitionHeadInsert(HashObject *head, Transition *transition){
       head -> tr.CharToWrite = transition -> CharToWrite;
       head -> tr.NextStep = transition -> NextStep;
       head -> tr.FinalState = transition -> FinalState;
-      //head -> tr = transition;	 
+      //head -> tr = transition;
       head -> next = tmp;
    }
 

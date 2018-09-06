@@ -77,7 +77,7 @@ int TransitionHashFunction(char, char);
 void FileParsing();
 void ReadAndRun();
 void MemoryClean();
-char* ExpandString(char*, char side);
+char* ExpandString(char*, char, int*);
 void RunMT(char*);
 void FreeSingleStringMemory(char*);
 void InitHashTable(HashObject**);
@@ -223,7 +223,7 @@ char* ExpandString(char *string, char side, int *stringlen){
       expandeString[i] = BLANK;
    expandeString[i] = '\0';*/
 
-   if(expandedString = (char *) malloc(*stringlen + EXPAND_STRING_DIM + 1) * sizeof(char)))
+   if(expandedString = (char *) malloc((*stringlen + EXPAND_STRING_DIM + 1) * sizeof(char)))
    {
       strcpy(expandedString, "\0");
 
@@ -255,7 +255,7 @@ void RunMT(char* string){
       stringlen = strlen(string),
       currentState,
       isFirst = TRUE,
-      trCount = 1;
+      trCount;
    Transition tr;
    QueueHead = NULL;
 
@@ -282,19 +282,17 @@ void RunMT(char* string){
       QueueHead = QueueHead -> next;
       free(tmp);
 
-      //Imposto la MT come non bloccata
-      BlockedMT = FALSE;
-
+      trCount = 1;
       while(trCount && stepNum <= MaxStep){
 
         if(index < 0){
-           string = ExpandString(string, 'L', stringlen);
+           string = ExpandString(string, 'L', &stringlen);
            index = EXPAND_STRING_DIM - 1;
            //stringlen = strlen(string);
         }
         else if(index == stringlen)
         {
-           string = ExpandString(string, 'R', stringlen);
+           string = ExpandString(string, 'R', &stringlen);
            //stringlen = strlen(string);
         }
 
@@ -302,19 +300,20 @@ void RunMT(char* string){
       	 //Eseguo le istruzione della transizione
 
         trCount = 0;
-        hashValue = TransitionHashFunction(currentState, readenChar);
-        hashObject = HashPointers[hashValue];
+
+        int hashValue = TransitionHashFunction(currentState, string[index]);
+        HashObject* hashObject = HashPointers[hashValue];
         for(; hashObject; hashObject = hashObject -> next)
-          if(hashObject -> tr.CurrentState == currentState && hashObject -> tr.ReadenChar == readenChar){
+          if(hashObject -> tr.CurrentState == currentState && hashObject -> tr.ReadenChar == string[index]){
           	 if(trCount){
-               TransitionQueueHeadInsert(hashObject -> tr.CharToWrite, hashObject -> tr.NextStep, hashObject -> tr.FinalState, tmp, string, stepNum, index);
+               TransitionQueueHeadInsert(hashObject -> tr.CharToWrite, hashObject -> tr.NextStep, hashObject -> tr.FinalState, string, stepNum, index);
              } else {
               string[index] = hashObject -> tr.CharToWrite;
               currentState = hashObject -> tr.FinalState;
 
               if(hashObject -> tr.NextStep == 'R')
                 index++;
-              else if(HashObject -> tr.NextStep == 'L')
+              else if(hashObject -> tr.NextStep == 'L')
                 index--;
               }
 
@@ -329,11 +328,11 @@ void RunMT(char* string){
 
       //Una volta che la macchina si è bloccata controllo se lo stato in cui è arrivato è uno stato di accettazione
       if(stepNum > MaxStep)
-	       MaxStepOvered = TRUE;
+	 MaxStepOvered = TRUE;
       else if(stepNum <= MaxStep && AccStatesArray[currentState]){
       	 //In caso affermativo stampo 1 e avvio la procedura per la pulizia della memoria
       	 printf("1\n");
-      	//printf("currentState: %d\n", currentState);
+      	 //printf("currentState: %d\n", currentState);
       	 FreeSingleStringMemory(string);
       	 AcceptedString = TRUE;
       }

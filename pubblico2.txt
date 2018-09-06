@@ -60,4 +60,3 @@ max
 4000
 run
 aabbbbcc
-aabcc

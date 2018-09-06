@@ -269,6 +269,7 @@ void RunMT(char* string){
       string = QueueHead -> String;
       index = QueueHead -> Index;
       string[index] = QueueHead -> CharToWrite;
+      stringlen = strlen(string);
 
       if(QueueHead -> NextStep == 'R')
         index++;
@@ -301,21 +302,23 @@ void RunMT(char* string){
 
         trCount = 0;
 
+        int _currentState = currentState;
+	char _readenChar = string[index];
         int hashValue = TransitionHashFunction(currentState, string[index]);
         HashObject* hashObject = HashPointers[hashValue];
         for(; hashObject; hashObject = hashObject -> next)
-          if(hashObject -> tr.CurrentState == currentState && hashObject -> tr.ReadenChar == string[index]){
-          	 if(trCount){
+          if(hashObject -> tr.CurrentState == _currentState && hashObject -> tr.ReadenChar == _readenChar)
+            if(trCount){
+	       //printf("Aggiunto tr\n");
                TransitionQueueHeadInsert(hashObject -> tr.CharToWrite, hashObject -> tr.NextStep, hashObject -> tr.FinalState, string, stepNum, index);
-             } else {
+            } else {
               string[index] = hashObject -> tr.CharToWrite;
               currentState = hashObject -> tr.FinalState;
 
               if(hashObject -> tr.NextStep == 'R')
                 index++;
               else if(hashObject -> tr.NextStep == 'L')
-                index--;
-              }
+                index--;              
 
               trCount = 1;
             }

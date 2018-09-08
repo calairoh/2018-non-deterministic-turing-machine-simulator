@@ -10,7 +10,7 @@
 #define TRUE 1
 #define FALSE 0
 #define BLANK '_'
-#define HASH_TABLE_DIM 30
+#define HASH_TABLE_DIM 50
 #define TRANSITION_STRING_DIM 10
 #define FIRST_ASCII_LETTER_INT 97 // ASCII 97 = 'a'
 #define BUFFER_DIM 100

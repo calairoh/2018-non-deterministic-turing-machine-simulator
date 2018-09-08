@@ -302,17 +302,20 @@ void RunMT(char* string){
 
         trCount = 0;
 
+	 char charToWrite;
+
         int _currentState = currentState;
 	char _readenChar = string[index];
+	int _index = index;
         int hashValue = TransitionHashFunction(currentState, string[index]);
         HashObject* hashObject = HashPointers[hashValue];
         for(; hashObject; hashObject = hashObject -> next)
           if(hashObject -> tr.CurrentState == _currentState && hashObject -> tr.ReadenChar == _readenChar)
             if(trCount){
-	       //printf("Aggiunto tr\n");
-               TransitionQueueHeadInsert(hashObject -> tr.CharToWrite, hashObject -> tr.NextStep, hashObject -> tr.FinalState, string, stepNum, index);
+               TransitionQueueHeadInsert(hashObject -> tr.CharToWrite, hashObject ->
+	       tr.NextStep, hashObject -> tr.FinalState, string, stepNum, _index);
             } else {
-              string[index] = hashObject -> tr.CharToWrite;
+              charToWrite = hashObject -> tr.CharToWrite;
               currentState = hashObject -> tr.FinalState;
 
               if(hashObject -> tr.NextStep == 'R')
@@ -322,11 +325,13 @@ void RunMT(char* string){
 
               trCount = 1;
             }
+	    
+	 string[_index] = charToWrite;
 
-      	    //Incremento il numero di step fatti
-      	    stepNum++;
+      	 //Incremento il numero di step fatti
+      	 stepNum++;
 
-      	    //printf("Index: %d Step numero %d\t Stringa: %s\t Stato corrente %d\n", index, stepNum, string, currentState);
+      	 //printf("Index: %d Step numero %d\t Stringa: %s\t Stato corrente %d\n", index, stepNum, string, currentState);
       }
 
       //Una volta che la macchina si è bloccata controllo se lo stato in cui è arrivato è uno stato di accettazione

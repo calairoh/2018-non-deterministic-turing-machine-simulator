@@ -388,7 +388,7 @@ void RunMT(char* string){
 }*/
 
 int TransitionHashFunction(char c1, char c2){
-   return ((int)c1 + (int)c2) % HASH_TABLE_DIM;
+   return ((int)c1 * (int)c2) % HASH_TABLE_DIM;
 }
 
 void TransitionQueueHeadInsert(char charToWrite, char nextStep, int finalState, char* string, int stepNum, int index){
